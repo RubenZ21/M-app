@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Minja's Day</title>
+<meta name="description" content="Plan the day, keep the to-do list, and cook from your own recipe book.">
+<meta name="theme-color" content="#FDFCFA">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Minja's Day">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Karla:wght@300;400;500;600&display=swap">
+<style>
+/* One airy column, hairline rules instead of boxes, warm white with a rose accent (same look as Minja's Kitchen). */
+:root{
+  --bg:#FDFCFA; --surface:#FFFFFF; --fg:#2E2A2C; --muted:#8A8084;
+  --line:#E9E3E1; --accent:#A8687C; --accent-soft:#F6EEF0; --accent-ink:#7E4A5C;
+  --done:#6F8A72; --done-soft:#EEF3EE; --danger:#A24B4B;
+  --display:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --body:"Karla","Segoe UI",system-ui,sans-serif;
+  --nav-h:64px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:560px;margin:0 auto}
+button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;color:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:1.5px solid var(--accent);outline-offset:3px}
+h1,h2,h3{font-family:var(--display);font-weight:500;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:.005em}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+.view{display:none}.view.on{display:block;animation:fade .25s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:16px 10px}
+.brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.brand h1{font-size:28px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mark{width:30px;height:30px;border-radius:50%;border:1px solid var(--accent);display:grid;place-items:center;flex:none;color:var(--accent)}
+.mark svg{width:16px;height:16px}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:none;display:grid;place-items:center;flex:none}
+.back{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--muted);font-weight:500;font-size:14px;letter-spacing:.04em;text-transform:uppercase;padding:6px 0}
+.hello{display:flex;flex-direction:column;gap:6px;padding-block:6px 18px}
+.hello h2{font-size:36px;font-weight:400;font-style:italic}
+
+/* week strip */
+.strip{display:grid;grid-template-columns:28px repeat(7,1fr) 28px;align-items:center;gap:2px;margin-bottom:18px}
+.strip .nav{border:0;background:none;color:var(--muted);height:44px;display:grid;place-items:center;padding:0}
+.day{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;border-radius:999px}
+.day .dl{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.day .dn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:19px;font-weight:500;border:1px solid transparent}
+.day.today .dn{border-color:var(--accent);color:var(--accent-ink)}
+.day.sel .dn{background:var(--accent);border-color:var(--accent);color:#fff}
+.day .dot{width:5px;height:5px;border-radius:50%;background:transparent}
+.day .dot.has{background:var(--accent)}
+.day .dot.all{background:var(--done)}
+
+/* progress ring */
+.ring{display:flex;align-items:center;gap:14px;padding:4px 2px 18px;border-bottom:1px solid var(--line)}
+.ring svg{width:46px;height:46px;flex:none;transform:rotate(-90deg)}
+.ring .track{fill:none;stroke:var(--line);stroke-width:2.5}
+.ring .bar{fill:none;stroke:var(--done);stroke-width:2.5;stroke-linecap:round;transition:stroke-dasharray .4s}
+.ring .lbl{flex:1;min-width:0}
+.ring .lbl strong{display:block;font-weight:500;font-size:15px}
+.ring .lbl span{color:var(--muted);font-style:italic;font-family:var(--display);font-size:17px}
+
+/* add row */
+.add{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:10px 2px}
+.add input{border:0;background:none;flex:1;min-width:0;font:inherit;font-weight:400;outline:none;padding:6px 0}
+.add input::placeholder{color:var(--muted);font-weight:300}
+.add .plus{width:34px;height:34px;border-radius:50%;border:0;background:var(--fg);color:var(--bg);display:grid;place-items:center;flex:none}
+.add .more{border:0;background:none;color:var(--muted);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:6px 2px;flex:none}
+
+.banner{display:flex;align-items:center;gap:12px;background:var(--accent-soft);border-radius:6px;padding:12px 14px;margin:14px 0 4px;font-size:14px}
+.banner p{margin:0;flex:1;min-width:0}
+.banner .linkbtn{flex:none}
+
+/* sections + items */
+.sec{margin-top:26px}
+.sec>h3{font-size:26px;font-weight:400;margin-bottom:4px;display:flex;align-items:baseline;gap:12px}
+.sec>h3 small{font-family:var(--body);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.list{display:flex;flex-direction:column}
+.task{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;border-bottom:1px solid var(--line);padding:12px 2px}
+.task .box,.item .box{width:24px;height:24px;border-radius:50%;border:1.2px solid var(--muted);display:grid;place-items:center;margin-top:1px;transition:all .2s;background:none;padding:0}
+.box svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.6);transition:all .2s}
+.task .body{border:0;background:none;text-align:left;padding:0;min-width:0}
+.task .ttl{display:block;font-weight:400;overflow-wrap:anywhere}
+.task .meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+.task .meta span{display:inline-flex;align-items:center;gap:5px}
+.task .meta svg.i{width:13px;height:13px}
+.cdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.task .star{border:0;background:none;padding:2px;color:var(--line);display:grid;place-items:center}
+.task .star.on{color:var(--accent)}
+.task .star svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.task .star.on svg{fill:currentColor}
+.task.done .box,.item.done .box{background:var(--done);border-color:var(--done)}
+.task.done .box svg,.item.done .box svg{opacity:1;transform:scale(1)}
+.task.done .ttl{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.task .time{font-family:var(--mono,inherit);color:var(--accent-ink);font-weight:500}
+.empty{padding:28px 10px;text-align:center;color:var(--muted);font-style:italic;font-family:var(--display);font-size:20px}
+.cheer{margin-top:24px;padding:20px;text-align:center;font-family:var(--display);font-style:italic;font-size:25px;color:var(--accent-ink);border-top:1px solid var(--accent-soft);border-bottom:1px solid var(--accent-soft);animation:pop .4s ease-out}
+@keyframes pop{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+.toggle-done{border:0;background:none;color:var(--muted);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:12px 2px}
+
+/* meals */
+.meal{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;border:0;border-bottom:1px solid var(--line);background:none;padding:13px 2px;text-align:left;width:100%}
+.meal b{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.meal .mv{font-family:var(--display);font-size:20px;min-width:0;overflow-wrap:anywhere}
+.meal .mv.none{color:var(--line);font-style:italic}
+.meal .go{color:var(--muted)}
+textarea.note{width:100%;min-height:96px;border:0;border-radius:6px;background:var(--accent-soft);padding:14px 16px;font-family:var(--display);font-style:italic;font-size:19px;line-height:1.45;color:var(--fg);resize:vertical}
+textarea.note::placeholder{color:var(--muted)}
+
+/* week view */
+.wk{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:16px 2px}
+.wk .wh{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.wk h3{font-size:24px;font-weight:400}
+.wk.today h3{color:var(--accent-ink)}
+.wk .cnt{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.wk .cnt.all{color:var(--done)}
+.wk ul{margin:6px 0 0;padding:0;list-style:none;font-size:14.5px}
+.wk li{display:flex;gap:8px;align-items:center;padding:1px 0;min-width:0}
+.wk li span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk li.d{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.wk .ml{margin-top:6px;font-size:13px;color:var(--muted);font-style:italic}
+.wkhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.wkhead .nav{border:1px solid var(--line);background:none;border-radius:50%;width:36px;height:36px;display:grid;place-items:center;color:var(--muted)}
+
+/* recipes (from Minja's Kitchen) */
+.search{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:8px 2px;margin-bottom:14px;color:var(--muted)}
+.search input{border:0;background:none;color:var(--fg);flex:1;min-width:0;font:inherit;font-weight:300;outline:none}
+.search input::placeholder{color:var(--muted)}
+.chips{display:flex;gap:18px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;background:none;color:var(--muted);padding:6px 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;border-bottom:1.5px solid transparent}
+.chip.on{color:var(--fg);border-bottom-color:var(--accent)}
+.card{display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:center;background:none;border:0;border-bottom:1px solid var(--line);padding:18px 2px;text-align:left;width:100%}
+.card .tile{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:24px;font-weight:500;color:var(--accent)}
+.card .t{min-width:0}
+.card h3{font-size:22px;margin-bottom:3px}
+.card .meta{font-size:13px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;letter-spacing:.02em}
+.card .prog{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--done);white-space:nowrap}
+.foot{font-size:12px;color:var(--muted);text-align:center;padding-top:28px;letter-spacing:.08em;text-transform:uppercase}
+.head{padding:6px 2px 22px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.head h2{font-size:38px;font-weight:400;margin:10px 0 18px}
+.facts{display:flex;gap:28px;flex-wrap:wrap;font-size:15px}
+.facts span b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:2px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px}
+.tag{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:4px 11px;border:1px solid var(--line);color:var(--muted)}
+.tag.soft{border-color:var(--accent-soft);background:var(--accent-soft);color:var(--accent-ink)}
+.head .ring{border:0;padding:20px 0 0}
+.item{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;background:none;border:0;border-bottom:1px solid var(--line);padding:13px 2px;text-align:left;width:100%}
+.item.step .box{border-radius:6px}
+.item .txt{min-width:0}
+.item.step .txt .n{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:3px}
+.item.done .txt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.item.done .txt .n{color:var(--done)}
+.item .from{display:block;font-size:12px;color:var(--muted);text-decoration:none}
+.notes{margin-top:26px;padding:16px 18px;background:var(--accent-soft);border-radius:4px;font-style:italic;font-family:var(--display);font-size:18px;line-height:1.45}
+.notes b{display:block;font-family:var(--body);font-style:normal;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px;font-weight:500}
+.linkbtn{border:0;background:none;color:var(--accent-ink);font-weight:500;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:6px 0}
+
+/* panels, buttons, forms */
+.panel{padding:22px 2px;border-bottom:1px solid var(--line)}
+.panel h3{font-size:26px;font-weight:400;margin-bottom:6px}
+.panel p{margin:0 0 12px;font-size:15px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btn{border:1px solid var(--fg);border-radius:999px;padding:10px 20px;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--fg);color:var(--bg)}
+.btn.ghost{background:none;color:var(--fg)}
+.btn.quiet{background:none;border-color:var(--line);color:var(--muted)}
+.btn.danger{background:none;border-color:var(--line);color:var(--danger)}
+.btn:disabled{opacity:.35;cursor:default}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.status{margin-top:10px;font-size:14px;min-height:1.2em}
+.status.ok{color:var(--done)}.status.err{color:var(--danger)}
+pre.fmt{white-space:pre-wrap;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px;margin:0 0 10px;max-height:220px;overflow:auto}
+textarea.code{width:100%;min-height:120px;border:1px solid var(--line);border-radius:4px;padding:12px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--surface);color:var(--fg);resize:vertical}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.field>label,.field>span{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.inp{font:inherit;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);width:100%;min-width:0}
+.inp.big{font-family:var(--display);font-size:22px;padding:10px 12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:13px;display:inline-flex;align-items:center;gap:7px}
+.pick button.on{border-color:var(--fg);background:var(--fg);color:var(--bg)}
+.prev{margin-top:12px;font-size:14px}
+.prev ul{margin:6px 0 0;padding-left:18px}
+.small{font-size:13px;color:var(--muted)}
+
+/* bottom nav */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(253,252,250,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;position:relative}
+.tab svg.i{width:21px;height:21px}
+.tab.on{color:var(--accent-ink)}
+.tab.on::before{content:"";position:absolute;top:-1px;left:30%;right:30%;height:2px;background:var(--accent);border-radius:2px}
+.tab .badge[hidden]{display:none}
+.tab .badge{position:absolute;top:8px;left:calc(50% + 8px);min-width:17px;height:17px;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;letter-spacing:0;display:grid;place-items:center;padding:0 4px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(46,42,44,.28);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--bg);border-radius:18px 18px 0 0;max-height:90vh;overflow:auto;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .28s;visibility:hidden;padding:10px max(18px,env(safe-area-inset-left,0px)) calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(46,42,44,.12)}
+.sheet.on{transform:none;visibility:visible;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sheet .in{max-width:560px;margin:0 auto}
+.sheet .in{position:relative}
+.sheet .close{position:absolute;right:0;top:10px;width:34px;height:34px}
+.sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+.sheet h2{font-size:30px;font-weight:400;font-style:italic}
+.sheet .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.sheet .actions .btn:first-child{flex:1}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:all .25s;pointer-events:none;z-index:40;white-space:nowrap;display:flex;gap:14px;align-items:center}
+.toast.on{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{border:0;background:none;color:#F0C9D4;font:inherit;letter-spacing:inherit;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top" id="topbar">
+  <div class="brand">
+    <div class="mark"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+    <h1 id="brand-name">Minja's Day</h1>
+  </div>
+  <button class="iconbtn" id="go-settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</header>
+
+<!-- ===== DAY ===== -->
+<section id="v-day" class="view on">
+  <div class="hello"><span class="eyebrow" id="day-eyebrow"></span><h2 id="day-greet"></h2></div>
+  <div class="strip" id="strip"></div>
+  <div class="ring" id="day-ring"></div>
+  <div id="leftover"></div>
+  <form class="add" id="add-form" autocomplete="off">
+    <input id="add-input" placeholder="Add something to do…" enterkeyhint="done" aria-label="New task">
+    <button type="button" class="more" id="add-more">Details</button>
+    <button type="submit" class="plus" aria-label="Add"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  </form>
+  <div id="day-tasks"></div>
+  <div class="sec"><h3>Meals <small>today's menu</small></h3><div id="day-meals"></div></div>
+  <div class="sec"><h3>Note to self</h3><textarea class="note" id="day-note" placeholder="A thought, a gratitude, something to remember…"></textarea></div>
+</section>
+
+<!-- ===== WEEK ===== -->
+<section id="v-week" class="view">
+  <div class="hello"><span class="eyebrow" id="wk-eyebrow"></span>
+    <div class="wkhead"><h2 id="wk-title">This week</h2>
+      <div style="display:flex;gap:8px"><button class="nav" id="wk-prev" aria-label="Previous week"><svg class="i" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg></button><button class="nav" id="wk-next" aria-label="Next week"><svg class="i" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button></div>
+    </div>
+  </div>
+  <div id="wk-list"></div>
+</section>
+
+<!-- ===== RECIPES ===== -->
+<section id="v-recipes" class="view">
+  <div class="hello"><span class="eyebrow">Gluten free · Dairy free</span><h2 id="rc-greet">What shall we make today?</h2></div>
+  <label class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Search recipes or ingredients"></label>
+  <div class="chips" id="chips"></div>
+  <div id="cards"></div>
+  <div class="foot" id="count"></div>
+</section>
+
+<section id="v-recipe" class="view">
+  <button class="back" id="back-recipes"><svg class="i" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>All recipes</button>
+  <div id="detail"></div>
+</section>
+
+<!-- ===== SHOPPING ===== -->
+<section id="v-shop" class="view">
+  <div class="hello"><span class="eyebrow">Shopping list</span><h2>What we need</h2></div>
+  <form class="add" id="shop-form" autocomplete="off">
+    <input id="shop-input" placeholder="Add an item…" enterkeyhint="done" aria-label="New shopping item">
+    <button type="submit" class="plus" aria-label="Add"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  </form>
+  <div id="shop-list"></div>
+  <div class="row" id="shop-actions"></div>
+</section>
+
+<!-- ===== SETTINGS ===== -->
+<section id="v-settings" class="view">
+  <button class="back" id="back-settings"><svg class="i" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>Back</button>
+  <div class="hello"><span class="eyebrow">Settings</span><h2>Make it yours</h2></div>
+
+  <div class="panel" id="install-panel">
+    <h3>Put it on your phone</h3>
+    <p id="install-text">In Chrome, tap the ⋮ menu and choose <b>Add to Home screen</b> (or <b>Install app</b>). On an iPhone, use Safari's Share button and <b>Add to Home Screen</b>.</p>
+    <div class="row"><button class="btn" id="install-btn" hidden>Install app</button></div>
+  </div>
+
+  <div class="panel">
+    <h3>Your name</h3>
+    <p>Used for the greeting and the app title.</p>
+    <div class="row"><input class="inp" id="set-name" style="flex:1" maxlength="30"><button class="btn ghost" id="save-name">Save</button></div>
+  </div>
+
+  <div class="panel">
+    <h3>Add recipes from Claude</h3>
+    <p>Copy this prompt into Claude, say what you fancy, and paste its answer below.</p>
+    <pre class="fmt" id="prompt-text"></pre>
+    <div class="row"><button class="btn ghost" id="copy-prompt">Copy prompt</button></div>
+    <div class="field"><span>Paste the CSV here</span><textarea class="code" id="paste" placeholder="title,category,time,serves,tags,ingredients,steps,notes"></textarea></div>
+    <div class="row"><button class="btn" id="do-import" disabled>Import</button><label class="btn ghost filebtn">Pick a file<input type="file" id="csv-file" accept=".csv,text/csv,text/plain"></label></div>
+    <div class="prev" id="preview"></div>
+    <div class="status" id="imp-status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Remove a recipe</h3>
+    <div class="row"><select class="inp" id="del-sel" style="flex:1"></select><button class="btn danger" id="del-btn">Remove</button></div>
+    <div class="status" id="del-status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Back up everything</h3>
+    <p>Your plans and recipes live only on this phone. Save a backup now and then, or use it to move to a new phone.</p>
+    <div class="row"><button class="btn" id="backup-btn">Save backup</button><label class="btn ghost filebtn">Restore backup<input type="file" id="restore-file" accept=".json,application/json"></label></div>
+    <div class="row"><button class="btn quiet" id="copy-recipes">Copy recipes as CSV</button><button class="btn quiet" id="clean-btn">Clear old finished tasks</button></div>
+    <div class="status" id="bk-status"></div>
+  </div>
+  <p class="foot">Minja's Day · v1</p>
+</section>
+
+</div>
+
+<nav class="tabs" aria-label="Sections"><div class="in">
+  <button class="tab on" data-tab="day"><svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>Day</button>
+  <button class="tab" data-tab="week"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>Week</button>
+  <button class="tab" data-tab="recipes"><svg class="i" viewBox="0 0 24 24"><path d="M6 20V9a6 6 0 0 1 12 0v11"/><path d="M4 20h16"/><path d="M12 3v3"/></svg>Recipes</button>
+  <button class="tab" data-tab="shop"><svg class="i" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Shopping<span class="badge" id="shop-badge" hidden></span></button>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="in"><div class="grab"></div><button class="iconbtn close" id="sheet-x" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div id="sheet-body"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,"0");
+const keyOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromKey=k=>{const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)};
+const addDays=(k,n)=>{const d=fromKey(k);d.setDate(d.getDate()+n);return keyOf(d)};
+const todayKey=()=>keyOf(new Date());
+const mondayOf=k=>{const d=fromKey(k);return addDays(k,-((d.getDay()+6)%7))};
+const fmt=(k,o)=>fromKey(k).toLocaleDateString("en-GB",o);
+const ICON={
+  check:'<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  repeat:'<svg class="i" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+  note:'<svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>',
+  chev:'<svg class="i" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
+  left:'<svg class="i" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>'
+};
+function ringSVG(done,total){const C=2*Math.PI*22,p=total?done/total:0;
+  return `<svg viewBox="0 0 52 52"><circle class="track" cx="26" cy="26" r="22"/><circle class="bar" cx="26" cy="26" r="22" stroke-dasharray="${(C*p).toFixed(1)} ${C.toFixed(1)}"/></svg>`}
+
+/* ---------- storage ---------- */
+const K_DATA="md.data", K_REC="mk.recipes", K_TICK="mk.ticks";
+function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb}catch(e){return fb}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast("Could not save on this device")}}
+const blank=()=>({tasks:[],meals:{},notes:{},shop:[],settings:{name:"Minja"},v:1});
+let db=Object.assign(blank(),load(K_DATA,{}));
+const persist=()=>save(K_DATA,db);
+
+/* ---------- categories ---------- */
+const CATS=[
+  {id:"home",label:"Home",c:"#A8687C"},
+  {id:"studio",label:"Studio",c:"#8B7BB0"},
+  {id:"family",label:"Family",c:"#C2876A"},
+  {id:"errands",label:"Errands",c:"#6F8A72"},
+  {id:"me",label:"For me",c:"#C9A15A"}
+];
+const catOf=id=>CATS.find(c=>c.id===id);
+const REPEATS={none:"Just once",daily:"Every day",weekdays:"Weekdays",weekly:"Every week",monthly:"Every month"};
+
+/* ---------- tasks ---------- */
+function occurs(t,k){
+  if(!t.repeat||t.repeat==="none")return t.date===k;
+  if(k<t.date||(t.skip&&t.skip[k]))return false;
+  const d=fromKey(k),s=fromKey(t.date);
+  switch(t.repeat){
+    case"daily":return true;
+    case"weekdays":return d.getDay()>0&&d.getDay()<6;
+    case"weekly":return d.getDay()===s.getDay();
+    case"monthly":return d.getDate()===s.getDate();
+  }return false;
+}
+const isRep=t=>t.repeat&&t.repeat!=="none";
+const isDone=(t,k)=>isRep(t)?!!(t.doneOn&&t.doneOn[k]):!!t.done;
+function setDone(t,k,v){if(isRep(t)){t.doneOn=t.doneOn||{};if(v)t.doneOn[k]=1;else delete t.doneOn[k]}else t.done=v}
+function tasksFor(k){
+  return db.tasks.filter(t=>occurs(t,k)).sort((a,b)=>
+    (b.star?1:0)-(a.star?1:0)||(a.time?0:1)-(b.time?0:1)||(a.time||"").localeCompare(b.time||"")||a.created-b.created);
+}
+const leftovers=()=>db.tasks.filter(t=>!isRep(t)&&!t.done&&t.date<todayKey());
+
+/* ---------- recipes ---------- */
+const SEED=[{title:"Lemon & Almond Olive Oil Cake",category:"Cake",time:"1 h 10 min",serves:"10 slices",tags:"gluten free, dairy free, nut, lemon",
+  ingredients:["200 g ground almonds","100 g gluten-free plain flour blend (one with xanthan gum)","1½ tsp gluten-free baking powder","¼ tsp fine salt","3 large eggs, room temperature","180 g caster sugar","120 ml light olive oil","Finely grated zest of 2 lemons","60 ml fresh lemon juice (about 1½ lemons)","1 tsp vanilla extract","Glaze: 100 g icing sugar","Glaze: 2 tbsp fresh lemon juice","Handful of flaked almonds, to finish"],
+  steps:["Heat the oven to 170 °C fan (190 °C conventional). Oil a 20 cm round tin and line the base with baking paper.","Whisk the ground almonds, gluten-free flour, baking powder and salt together in a bowl so there are no lumps.","In a large bowl, whisk the eggs and caster sugar for 3–4 minutes until pale, thick and almost doubled.","Slowly pour in the olive oil while whisking, then whisk in the lemon zest, lemon juice and vanilla.","Fold the dry mix into the egg mix with a spatula, in two additions, until just combined. Do not overmix.","Pour into the tin, smooth the top and scatter over the flaked almonds.","Bake for 35–40 minutes, until golden and a skewer in the centre comes out clean. Cover loosely with foil after 25 minutes if it is browning too fast.","Cool in the tin for 15 minutes, then turn out onto a rack and leave to cool completely.","Stir the icing sugar and 2 tbsp lemon juice into a thick glaze and drizzle over the cold cake.","Let the glaze set for 10 minutes, then slice. Keeps 3 days in an airtight tin."],
+  notes:"Gluten-free flours vary; if the batter looks very stiff, loosen with 1–2 tbsp water. Swap half the lemon for orange for a softer flavour."}];
+const slug=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+const withId=r=>Object.assign({id:slug(r.title)},r);
+let recipes=load(K_REC,null);if(!recipes||!recipes.length){recipes=SEED.map(withId);save(K_REC,recipes)}
+let ticks=load(K_TICK,{});
+const recipeById=id=>recipes.find(r=>r.id===id);
+
+const HEAD=["title","category","time","serves","tags","ingredients","steps","notes"];
+function parseCSV(text){
+  const rows=[];let row=[],f="",q=false;text=text.replace(/^﻿/,"");
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;
+    else if(c===','){row.push(f);f=""}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(f);f="";rows.push(row);row=[]}
+    else f+=c}
+  if(f.length||row.length){row.push(f);rows.push(row)}
+  return rows.filter(r=>r.some(x=>x.trim()!==""));
+}
+const csvField=s=>{s=String(s??"");return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+const toCSV=list=>[HEAD.join(",")].concat(list.map(r=>HEAD.map(h=>csvField(Array.isArray(r[h])?r[h].join(" | "):r[h])).join(","))).join("\n");
+function rowsToRecipes(rows){
+  if(!rows.length)return{err:"Nothing to read."};
+  const hdr=rows[0].map(h=>h.trim().toLowerCase());
+  const idx=Object.fromEntries(HEAD.map(h=>[h,hdr.indexOf(h)]));
+  if(idx.title<0||idx.steps<0)return{err:"The first line must be a header with at least “title” and “steps”."};
+  const split=s=>s.split(/\s*\|\s*|\n+/).map(x=>x.trim()).filter(Boolean);
+  const out=[];
+  for(const r of rows.slice(1)){
+    const g=h=>idx[h]>=0?(r[idx[h]]||"").trim():"";
+    const title=g("title");if(!title)continue;
+    out.push(withId({title,category:g("category")||"Other",time:g("time"),serves:g("serves"),tags:g("tags"),ingredients:split(g("ingredients")),steps:split(g("steps")),notes:g("notes")}));
+  }
+  return out.length?{recipes:out}:{err:"No recipe rows found under the header."};
+}
+const PROMPT=`Please give me a gluten-free and dairy-free recipe for: [what you want]
+
+Reply ONLY with a CSV block, no other text, using exactly this header:
+title,category,time,serves,tags,ingredients,steps,notes
+
+Rules:
+- One recipe per row. Wrap every field in double quotes.
+- category is one word: Cake, Dessert, Bread, Breakfast, Main, Side, Soup, Salad, Snack, Drink.
+- ingredients: all ingredients with metric amounts, separated by " | ".
+- steps: numbered-free, short imperative sentences, one per step, separated by " | ". Include oven temperatures in °C fan and timings.
+- tags: comma separated, always include "gluten free, dairy free".
+- Double-check nothing contains wheat, barley, rye, milk, butter, cream or cheese; suggest the substitute instead.`;
+
+/* ---------- state ---------- */
+let tab="day", sel=todayKey(), weekStart=mondayOf(todayKey()), showDone=false;
+let cat="All", query="", current=null, pending=null, installEvt=null;
+const name=()=>(db.settings.name||"").trim();
+
+/* ---------- navigation ---------- */
+const VIEWS=["day","week","recipes","recipe","shop","settings"];
+function show(v){
+  VIEWS.forEach(x=>$("#v-"+x).classList.toggle("on",x===v));
+  const t=v==="recipe"?"recipes":v;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  window.scrollTo(0,0);
+}
+function go(t){tab=t;render();show(t)}
+function render(){
+  $("#brand-name").textContent=name()?`${name()}'s Day`:"My Day";
+  renderBadge();
+  if(tab==="day")renderDay();
+  else if(tab==="week")renderWeek();
+  else if(tab==="recipes")renderRecipes();
+  else if(tab==="shop")renderShop();
+}
+
+/* ---------- DAY ---------- */
+function greeting(){const h=new Date().getHours(),n=name()?`, ${name()}`:"";
+  return h<5?`Still up${n}?`:h<12?`Good morning${n}.`:h<18?`Good afternoon${n}.`:`Good evening${n}.`}
+function renderDay(){
+  const t=todayKey(),isToday=sel===t;
+  $("#day-eyebrow").textContent=(isToday?"Today · ":sel===addDays(t,1)?"Tomorrow · ":sel===addDays(t,-1)?"Yesterday · ":"")+fmt(sel,{weekday:"long",day:"numeric",month:"long"});
+  $("#day-greet").textContent=isToday?greeting():sel<t?"Looking back":`Plans for ${fmt(sel,{weekday:"long"})}`;
+
+  // week strip
+  const ws=mondayOf(sel);let s=`<button class="nav" data-shift="-7" aria-label="Previous week">${ICON.left}</button>`;
+  for(let i=0;i<7;i++){const k=addDays(ws,i),list=tasksFor(k),dn=list.filter(x=>isDone(x,k)).length;
+    s+=`<button class="day${k===t?" today":""}${k===sel?" sel":""}" data-day="${k}" aria-label="${fmt(k,{weekday:"long",day:"numeric",month:"long"})}">
+      <span class="dl">${fmt(k,{weekday:"short"}).slice(0,2)}</span><span class="dn">${fromKey(k).getDate()}</span>
+      <span class="dot${list.length?(dn===list.length?" all":" has"):""}"></span></button>`}
+  $("#strip").innerHTML=s+`<button class="nav" data-shift="7" aria-label="Next week">${ICON.chev}</button>`;
+
+  // ring
+  const list=tasksFor(sel),done=list.filter(x=>isDone(x,sel)).length,total=list.length;
+  $("#day-ring").innerHTML=ringSVG(done,total)+`<div class="lbl"><strong>${!total?"Nothing planned yet":done===total?"All done!":`${done} of ${total} done`}</strong><span>${!total?"Add the first thing below.":done===total?"Well done, rest a little.":done?"Keep going, you're on a roll.":"One small step at a time."}</span></div>`+(isToday?"":`<button class="linkbtn" data-day="${t}">Today</button>`);
+
+  // leftovers
+  const lo=isToday?leftovers():[];
+  $("#leftover").innerHTML=lo.length?`<div class="banner"><p>${lo.length} unfinished ${lo.length>1?"tasks":"task"} from earlier days.</p><button class="linkbtn" id="bring">Bring to today</button></div>`:"";
+
+  // tasks
+  const open=list.filter(x=>!isDone(x,sel)),fin=list.filter(x=>isDone(x,sel));
+  const groups=[["Priorities",open.filter(x=>x.star)],["Scheduled",open.filter(x=>!x.star&&x.time)],["Anytime",open.filter(x=>!x.star&&!x.time)]];
+  let h="";
+  for(const[g,arr]of groups)if(arr.length)h+=`<div class="sec"><h3>${g} <small>${arr.length}</small></h3><div class="list">${arr.map(taskRow).join("")}</div></div>`;
+  if(!total)h+=`<div class="empty">A clear day. What would make it a good one?</div>`;
+  else if(!open.length)h+=`<div class="cheer">Everything ticked off. Beautifully done.</div>`;
+  if(fin.length)h+=`<button class="toggle-done" id="toggle-done">${showDone?"Hide":"Show"} ${fin.length} done</button>${showDone?`<div class="list">${fin.map(taskRow).join("")}</div>`:""}`;
+  $("#day-tasks").innerHTML=h;
+
+  // meals
+  const m=db.meals[sel]||{};
+  $("#day-meals").innerHTML=[["b","Breakfast"],["l","Lunch"],["d","Dinner"]].map(([k,l])=>{const v=m[k],r=v&&v.recipe&&recipeById(v.recipe);
+    const txt=r?r.title:v&&v.text;
+    return `<button class="meal" data-meal="${k}"><b>${l}</b><span class="mv${txt?"":" none"}">${esc(txt||"Add")}</span><span class="go">${ICON.chev}</span></button>`}).join("");
+
+  const note=$("#day-note");if(document.activeElement!==note)note.value=db.notes[sel]||"";
+}
+function taskRow(t){const d=isDone(t,sel),c=catOf(t.cat);
+  const meta=[t.time?`<span class="time">${esc(t.time)}</span>`:"",c?`<span><i class="cdot" style="background:${c.c}"></i>${esc(c.label)}</span>`:"",isRep(t)?`<span>${ICON.repeat}${esc(REPEATS[t.repeat])}</span>`:"",t.note?`<span>${ICON.note}note</span>`:""].join("");
+  return `<div class="task${d?" done":""}" data-id="${t.id}">
+    <button class="box" data-act="tick" aria-label="${d?"Mark not done":"Mark done"}">${ICON.check}</button>
+    <button class="body" data-act="edit"><span class="ttl">${esc(t.title)}</span>${meta?`<span class="meta">${meta}</span>`:""}</button>
+    <button class="star${t.star?" on":""}" data-act="star" aria-label="Priority">${ICON.star}</button></div>`}
+
+/* ---------- WEEK ---------- */
+function renderWeek(){
+  const t=todayKey(),end=addDays(weekStart,6);
+  $("#wk-eyebrow").textContent=`${fmt(weekStart,{day:"numeric",month:"short"})} – ${fmt(end,{day:"numeric",month:"short",year:"numeric"})}`;
+  const tw=mondayOf(t);
+  $("#wk-title").textContent=weekStart===tw?"This week":weekStart===addDays(tw,7)?"Next week":weekStart===addDays(tw,-7)?"Last week":"Week of "+fmt(weekStart,{day:"numeric",month:"long"});
+  let h="";
+  for(let i=0;i<7;i++){const k=addDays(weekStart,i),list=tasksFor(k),dn=list.filter(x=>isDone(x,k)).length,m=db.meals[k]||{};
+    const meals=["b","l","d"].map(x=>{const v=m[x];if(!v)return"";const r=v.recipe&&recipeById(v.recipe);return r?r.title:v.text}).filter(Boolean);
+    const shown=list.slice(0,4);
+    h+=`<button class="wk${k===t?" today":""}" data-day="${k}">
+      <div class="wh"><h3>${fmt(k,{weekday:"long"})} <span class="muted" style="font-size:18px">${fromKey(k).getDate()}</span></h3><span class="cnt${list.length&&dn===list.length?" all":""}">${list.length?(dn===list.length?"All done":`${dn} / ${list.length}`):"Free"}</span></div>
+      ${shown.length?`<ul>${shown.map(x=>{const c=catOf(x.cat);return `<li class="${isDone(x,k)?"d":""}"><i class="cdot" style="background:${c?c.c:"var(--line)"}"></i><span class="t">${x.time?esc(x.time)+" · ":""}${esc(x.title)}</span></li>`}).join("")}${list.length>4?`<li class="muted">+ ${list.length-4} more</li>`:""}</ul>`:""}
+      ${meals.length?`<div class="ml">${meals.map(esc).join(" · ")}</div>`:""}
+      ${db.notes[k]?`<div class="ml">“${esc(db.notes[k].slice(0,70))}${db.notes[k].length>70?"…":""}”</div>`:""}
+    </button>`}
+  $("#wk-list").innerHTML=h;
+}
+
+/* ---------- RECIPES ---------- */
+function progress(r){const t=ticks[r.id]||{};return{done:r.steps.filter((_,i)=>t["s"+i]).length,total:r.steps.length}}
+function renderRecipes(){
+  const h=new Date().getHours();
+  $("#rc-greet").textContent=h<11?"Good morning. Something to bake?":h<17?"What shall we make today?":"Something lovely for tonight?";
+  const cats=["All",...new Set(recipes.map(r=>r.category))];if(!cats.includes(cat))cat="All";
+  $("#chips").innerHTML=cats.map(c=>`<button class="chip${c===cat?" on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+  const q=query.toLowerCase();
+  const list=recipes.filter(r=>(cat==="All"||r.category===cat)&&(!q||(r.title+" "+r.tags+" "+r.ingredients.join(" ")).toLowerCase().includes(q)));
+  $("#cards").innerHTML=list.length?list.map(r=>{const p=progress(r),pct=p.total?Math.round(100*p.done/p.total):0;
+    return `<button class="card" data-rid="${esc(r.id)}"><div class="tile">${esc(r.title[0])}</div>
+      <div class="t"><h3>${esc(r.title)}</h3><div class="meta">${r.time?`<span>${esc(r.time)}</span>`:""}${r.serves?`<span>${esc(r.serves)}</span>`:""}<span>${r.steps.length} steps</span></div></div>
+      <div>${p.done?`<span class="prog">${pct===100?"Done":pct+"%"}</span>`:""}</div></button>`}).join("")
+    :`<div class="empty">No recipes match. Try another word, or add one in Settings.</div>`;
+  $("#count").textContent=recipes.length+(recipes.length===1?" recipe":" recipes")+" in your cookbook";
+}
+function renderDetail(){
+  const r=current;if(!r)return;const t=ticks[r.id]||{},p=progress(r);
+  const tags=r.tags.split(",").map(x=>x.trim()).filter(Boolean);
+  $("#detail").innerHTML=`<div class="head">
+    <span class="eyebrow">${esc(r.category)}</span><h2>${esc(r.title)}</h2>
+    <div class="facts">${r.time?`<span><b>Time</b>${esc(r.time)}</span>`:""}${r.serves?`<span><b>Makes</b>${esc(r.serves)}</span>`:""}<span><b>Steps</b>${r.steps.length}</span></div>
+    <div class="tags">${tags.map(x=>`<span class="tag${/gluten|dairy/i.test(x)?" soft":""}">${esc(x)}</span>`).join("")}</div>
+    <div class="row"><button class="btn ghost" id="plan-recipe">Plan it</button><button class="btn quiet" id="shop-recipe">Add to shopping</button></div>
+    <div class="ring">${ringSVG(p.done,p.total)}<div class="lbl"><strong>${p.done===0?"Ready when you are":p.done===p.total?"All done!":p.done+" of "+p.total+" steps done"}</strong><span>${p.done===0?"Tap a step to tick it off.":p.done===p.total?"Time to enjoy it.":"Keep going, you're on a roll."}</span></div><button class="linkbtn" id="reset-one">Start over</button></div>
+  </div>
+  <div class="sec"><h3>Ingredients <small>tap to gather</small></h3><div class="list">${r.ingredients.map((x,i)=>`<button class="item${t["i"+i]?" done":""}" data-k="i${i}"><span class="box">${ICON.check}</span><span class="txt">${esc(x)}</span></button>`).join("")}</div></div>
+  <div class="sec"><h3>Method</h3><div class="list">${r.steps.map((x,i)=>`<button class="item step${t["s"+i]?" done":""}" data-k="s${i}"><span class="box">${ICON.check}</span><span class="txt"><span class="n">Step ${i+1}</span>${esc(x)}</span></button>`).join("")}</div></div>
+  ${p.total&&p.done===p.total?`<div class="cheer">Beautifully done. Enjoy every bite.</div>`:""}
+  ${r.notes?`<div class="notes"><b>Notes</b>${esc(r.notes)}</div>`:""}`;
+}
+function openRecipe(id){current=recipeById(id);if(!current)return;renderDetail();show("recipe")}
+
+/* ---------- SHOPPING ---------- */
+function renderBadge(){const n=db.shop.filter(x=>!x.done).length,b=$("#shop-badge");b.hidden=!n;b.textContent=n}
+function renderShop(){
+  const open=db.shop.filter(x=>!x.done),got=db.shop.filter(x=>x.done);
+  const row=x=>`<button class="item${x.done?" done":""}" data-sid="${x.id}"><span class="box">${ICON.check}</span><span class="txt">${esc(x.text)}${x.from?`<span class="from">for ${esc(x.from)}</span>`:""}</span></button>`;
+  $("#shop-list").innerHTML=(open.length?`<div class="list">${open.map(row).join("")}</div>`:`<div class="empty">${db.shop.length?"Got everything!":"The list is empty. Add items here, or from a recipe."}</div>`)
+    +(got.length?`<div class="sec"><h3>In the basket <small>${got.length}</small></h3><div class="list">${got.map(row).join("")}</div></div>`:"");
+  $("#shop-actions").innerHTML=(open.length?`<button class="btn ghost" id="shop-share">Share list</button>`:"")+(got.length?`<button class="btn quiet" id="shop-clear">Clear ticked</button>`:"");
+  renderBadge();
+}
+function addShop(text,from){text=text.trim();if(!text)return false;
+  if(db.shop.some(x=>!x.done&&x.text.toLowerCase()===text.toLowerCase()))return false;
+  db.shop.push({id:uid(),text,from:from||"",done:false});return true}
+
+/* ---------- SETTINGS ---------- */
+function renderSettings(){
+  $("#set-name").value=db.settings.name||"";
+  $("#prompt-text").textContent=PROMPT;
+  $("#del-sel").innerHTML=recipes.map(r=>`<option value="${esc(r.id)}">${esc(r.title)}</option>`).join("");
+  $("#install-btn").hidden=!installEvt;
+  $("#install-panel").hidden=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+}
+function previewPaste(){
+  const txt=$("#paste").value,pv=$("#preview"),st=$("#imp-status");st.textContent="";st.className="status";
+  if(!txt.trim()){pending=null;pv.innerHTML="";$("#do-import").disabled=true;return}
+  const res=rowsToRecipes(parseCSV(txt));
+  if(res.err){pending=null;pv.innerHTML="";st.textContent=res.err;st.className="status err";$("#do-import").disabled=true;return}
+  pending=res.recipes;$("#do-import").disabled=false;
+  pv.innerHTML=`Ready to import ${pending.length} recipe${pending.length>1?"s":""}:<ul>${pending.map(r=>`<li>${esc(r.title)} <span class="small">· ${r.ingredients.length} ingredients, ${r.steps.length} steps${recipes.some(x=>x.id===r.id)?" · replaces existing":""}</span></li>`).join("")}</ul>`;
+}
+function doImport(){
+  if(!pending)return;let added=0,updated=0;
+  for(const r of pending){const i=recipes.findIndex(x=>x.id===r.id);if(i>=0){recipes[i]=r;delete ticks[r.id];updated++}else{recipes.push(r);added++}}
+  save(K_REC,recipes);save(K_TICK,ticks);$("#paste").value="";pending=null;$("#preview").innerHTML="";$("#do-import").disabled=true;
+  const st=$("#imp-status");st.textContent=`Imported: ${added} new, ${updated} updated.`;st.className="status ok";renderSettings();toast("Cookbook updated");
+}
+function copy(text,ok){
+  const fail=()=>toast("Copy didn't work here");
+  try{navigator.clipboard.writeText(text).then(()=>toast(ok||"Copied"),fail)}catch(e){fail()}
+}
+function download(name,text,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+
+/* ---------- sheets ---------- */
+let sheetClose=null;
+function openSheet(html,onClose){$("#sheet-body").innerHTML=html;$("#scrim").classList.add("on");$("#sheet").classList.add("on");sheetClose=onClose||null}
+function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");if(sheetClose)sheetClose();sheetClose=null}
+
+function taskSheet(t,preset){
+  const isNew=!t;t=t||{title:preset||"",date:sel,time:"",cat:"",star:false,note:"",repeat:"none"};
+  const st={cat:t.cat||"",star:!!t.star};
+  openSheet(`<h2>${isNew?"New task":"Edit task"}</h2>
+    <div class="field"><label for="f-title">What</label><input class="inp big" id="f-title" value="${esc(t.title)}" placeholder="e.g. Call the dentist"></div>
+    <div class="two"><div class="field"><label for="f-date">Day</label><input class="inp" type="date" id="f-date" value="${t.date}"></div>
+    <div class="field"><label for="f-time">Time <span class="small" style="text-transform:none;letter-spacing:0">(optional)</span></label><input class="inp" type="time" id="f-time" value="${esc(t.time||"")}"></div></div>
+    <div class="field"><span>Area</span><div class="pick" id="f-cat">${CATS.map(c=>`<button type="button" data-v="${c.id}" class="${st.cat===c.id?"on":""}"><i class="cdot" style="background:${c.c}"></i>${c.label}</button>`).join("")}</div></div>
+    <div class="field"><span>Repeat</span><div class="pick" id="f-rep">${Object.entries(REPEATS).map(([k,l])=>`<button type="button" data-v="${k}" class="${(t.repeat||"none")===k?"on":""}">${l}</button>`).join("")}</div></div>
+    <div class="field"><span>Priority</span><div class="pick"><button type="button" id="f-star" class="${st.star?"on":""}">★ Make it a priority</button></div></div>
+    <div class="field"><label for="f-note">Note</label><textarea class="inp" id="f-note" rows="2" placeholder="Details, address, phone number…">${esc(t.note||"")}</textarea></div>
+    <div class="actions"><button class="btn" id="f-save">${isNew?"Add task":"Save"}</button>
+    ${isNew?"":(isRep(t)?`<button class="btn quiet" id="f-skip">Skip this day</button>`:`<button class="btn quiet" id="f-tmrw">Move to tomorrow</button>`)+`<button class="btn danger" id="f-del">Delete</button>`}</div>`);
+  if(isNew)setTimeout(()=>$("#f-title").focus(),280);
+  $("#f-cat").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.cat=st.cat===b.dataset.v?"":b.dataset.v;[...$("#f-cat").children].forEach(x=>x.classList.toggle("on",x.dataset.v===st.cat))};
+  $("#f-rep").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("#f-rep").children].forEach(x=>x.classList.toggle("on",x===b))};
+  $("#f-star").onclick=()=>{st.star=!st.star;$("#f-star").classList.toggle("on",st.star)};
+  $("#f-save").onclick=()=>{
+    const title=$("#f-title").value.trim();if(!title){$("#f-title").focus();return}
+    const rep=$("#f-rep .on")?.dataset.v||"none";
+    const obj=Object.assign(isNew?{id:uid(),created:Date.now(),done:false}:t,{title,date:$("#f-date").value||sel,time:$("#f-time").value,cat:st.cat,star:st.star,note:$("#f-note").value.trim(),repeat:rep});
+    if(rep!=="none"){obj.doneOn=obj.doneOn||{};obj.skip=obj.skip||{}}
+    if(isNew)db.tasks.push(obj);
+    persist();closeSheet();if(isNew)$("#add-input").value="";render();toast(isNew?"Added":"Saved");
+  };
+  if(!isNew){
+    $("#f-del").onclick=()=>{const i=db.tasks.indexOf(t);db.tasks.splice(i,1);persist();closeSheet();render();
+      toast("Deleted",()=>{db.tasks.splice(i,0,t);persist();render()})};
+    if($("#f-tmrw"))$("#f-tmrw").onclick=()=>{t.date=addDays(t.date,1);persist();closeSheet();render();toast("Moved to tomorrow")};
+    if($("#f-skip"))$("#f-skip").onclick=()=>{t.skip=t.skip||{};t.skip[sel]=1;persist();closeSheet();render();toast("Skipped for this day")};
+  }
+}
+function mealSheet(k){
+  const L={b:"Breakfast",l:"Lunch",d:"Dinner"}[k],m=(db.meals[sel]||{})[k]||{};
+  openSheet(`<h2>${L}</h2><p class="small">${fmt(sel,{weekday:"long",day:"numeric",month:"long"})}</p>
+    <div class="field"><label for="m-rec">From the recipe book</label><select class="inp" id="m-rec"><option value="">—</option>${recipes.map(r=>`<option value="${esc(r.id)}"${m.recipe===r.id?" selected":""}>${esc(r.title)}</option>`).join("")}</select></div>
+    <div class="field"><label for="m-text">Or just write it</label><input class="inp" id="m-text" value="${esc(m.recipe?"":m.text||"")}" placeholder="e.g. Leftover soup"></div>
+    <div class="actions"><button class="btn" id="m-save">Save</button>${m.recipe?`<button class="btn ghost" id="m-open">Open recipe</button>`:""}${m.recipe||m.text?`<button class="btn danger" id="m-clear">Clear</button>`:""}</div>`);
+  const setMeal=v=>{db.meals[sel]=db.meals[sel]||{};if(v)db.meals[sel][k]=v;else delete db.meals[sel][k];if(!Object.keys(db.meals[sel]).length)delete db.meals[sel];persist()};
+  $("#m-save").onclick=()=>{const r=$("#m-rec").value,tx=$("#m-text").value.trim();setMeal(r?{recipe:r}:tx?{text:tx}:null);closeSheet();render()};
+  if($("#m-clear"))$("#m-clear").onclick=()=>{setMeal(null);closeSheet();render()};
+  if($("#m-open"))$("#m-open").onclick=()=>{closeSheet();tab="recipes";openRecipe(m.recipe)};
+}
+function planSheet(r){
+  openSheet(`<h2>Plan “${esc(r.title)}”</h2>
+    <div class="two"><div class="field"><label for="p-date">Day</label><input class="inp" type="date" id="p-date" value="${sel<todayKey()?todayKey():sel}"></div>
+    <div class="field"><label for="p-meal">Meal</label><select class="inp" id="p-meal"><option value="d">Dinner</option><option value="l">Lunch</option><option value="b">Breakfast</option></select></div></div>
+    <div class="actions"><button class="btn" id="p-save">Add to plan</button></div>`);
+  $("#p-save").onclick=()=>{const d=$("#p-date").value;if(!d)return;db.meals[d]=db.meals[d]||{};db.meals[d][$("#p-meal").value]={recipe:r.id};persist();closeSheet();
+    toast("Planned for "+fmt(d,{weekday:"long"}))};
+}
+
+/* ---------- toast ---------- */
+let tt;function toast(msg,undo){const t=$("#toast");t.innerHTML=esc(msg)+(undo?` <button id="undo">Undo</button>`:"");t.classList.add("on");
+  if(undo)$("#undo").onclick=()=>{undo();t.classList.remove("on")};clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),undo?4000:1700)}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const el=e.target;
+  const tabb=el.closest(".tab");if(tabb){go(tabb.dataset.tab);return}
+  if(el.closest("#go-settings")){renderSettings();show("settings");return}
+  if(el.closest("#back-settings")){go(tab);return}
+  if(el.closest("#scrim")||el.closest("#sheet-x")){closeSheet();return}
+
+  // day
+  const sh=el.closest("[data-shift]");if(sh){sel=addDays(sel,+sh.dataset.shift);renderDay();return}
+  const dy=el.closest("[data-day]");if(dy){sel=dy.dataset.day;showDone=false;if(tab!=="day")go("day");else renderDay();return}
+  const tk=el.closest(".task [data-act]");if(tk){const t=db.tasks.find(x=>x.id===tk.closest(".task").dataset.id);if(!t)return;
+    if(tk.dataset.act==="tick"){setDone(t,sel,!isDone(t,sel));persist();renderDay();if(navigator.vibrate)navigator.vibrate(8)}
+    else if(tk.dataset.act==="star"){t.star=!t.star;persist();renderDay()}
+    else taskSheet(t);return}
+  if(el.closest("#toggle-done")){showDone=!showDone;renderDay();return}
+  if(el.closest("#bring")){const t=todayKey();leftovers().forEach(x=>x.date=t);persist();renderDay();toast("Brought to today");return}
+  const ml=el.closest("[data-meal]");if(ml){mealSheet(ml.dataset.meal);return}
+
+  // recipes
+  const card=el.closest("[data-rid]");if(card){openRecipe(card.dataset.rid);return}
+  const chip=el.closest(".chip");if(chip){cat=chip.dataset.c;renderRecipes();return}
+  if(el.closest("#back-recipes")){go("recipes");return}
+  const it=el.closest("#detail .item");if(it&&current){const t=ticks[current.id]||(ticks[current.id]={});t[it.dataset.k]=!t[it.dataset.k];save(K_TICK,ticks);renderDetail();return}
+  if(el.closest("#reset-one")&&current){delete ticks[current.id];save(K_TICK,ticks);renderDetail();return}
+  if(el.closest("#plan-recipe")&&current){planSheet(current);return}
+  if(el.closest("#shop-recipe")&&current){const n=current.ingredients.filter(x=>addShop(x,current.title)).length;persist();renderBadge();toast(n?`${n} items added to shopping`:"Already on the list");return}
+
+  // shopping
+  const si=el.closest("[data-sid]");if(si){const x=db.shop.find(s=>s.id===si.dataset.sid);if(x){x.done=!x.done;persist();renderShop()}return}
+  if(el.closest("#shop-clear")){const old=db.shop.slice();db.shop=db.shop.filter(x=>!x.done);persist();renderShop();toast("Cleared",()=>{db.shop=old;persist();renderShop()});return}
+  if(el.closest("#shop-share")){const txt=db.shop.filter(x=>!x.done).map(x=>"• "+x.text).join("\n");
+    if(navigator.share)navigator.share({title:"Shopping list",text:txt}).catch(()=>{});else copy(txt,"List copied");return}
+});
+// "Dentist at 14:30" or "call mum 9.15" -> title plus time
+function splitTime(v){const m=v.match(/^(.*?)\s*(?:\bat\s+|@\s*)?\b([01]?\d|2[0-3])[:.]([0-5]\d)\b\s*(.*)$/i);
+  if(!m||!(m[1]+m[4]).trim())return{title:v,time:""};
+  return{title:(m[1]+" "+m[4]).trim(),time:`${pad(+m[2])}:${m[3]}`}}
+$("#add-form").addEventListener("submit",e=>{e.preventDefault();const v=$("#add-input").value.trim();if(!v){taskSheet(null,"");return}
+  const{title,time}=splitTime(v);
+  db.tasks.push({id:uid(),title,date:sel,time,cat:"",star:false,note:"",repeat:"none",done:false,created:Date.now()});
+  persist();$("#add-input").value="";renderDay();});
+$("#add-more").onclick=()=>taskSheet(null,$("#add-input").value.trim());
+$("#day-note").addEventListener("input",e=>{const v=e.target.value;if(v.trim())db.notes[sel]=v;else delete db.notes[sel];persist()});
+$("#wk-prev").onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek()};
+$("#wk-next").onclick=()=>{weekStart=addDays(weekStart,7);renderWeek()};
+$("#q").addEventListener("input",e=>{query=e.target.value;renderRecipes()});
+$("#shop-form").addEventListener("submit",e=>{e.preventDefault();if(addShop($("#shop-input").value)){persist();$("#shop-input").value="";renderShop()}else if($("#shop-input").value.trim())toast("Already on the list")});
+
+// settings
+$("#save-name").onclick=()=>{db.settings.name=$("#set-name").value.trim();persist();render();toast("Saved")};
+$("#copy-prompt").onclick=()=>copy(PROMPT,"Prompt copied");
+$("#paste").addEventListener("input",previewPaste);
+$("#csv-file").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$("#paste").value=rd.result;previewPaste()};rd.readAsText(f);e.target.value=""});
+$("#do-import").onclick=doImport;
+$("#del-btn").onclick=()=>{const id=$("#del-sel").value,r=recipeById(id);if(!r)return;if(!confirm(`Remove “${r.title}”?`))return;
+  recipes=recipes.filter(x=>x.id!==id);delete ticks[id];save(K_REC,recipes);save(K_TICK,ticks);renderSettings();$("#del-status").textContent=`Removed “${r.title}”.`;$("#del-status").className="status ok"};
+$("#copy-recipes").onclick=()=>copy(toCSV(recipes),"Recipes copied");
+$("#backup-btn").onclick=()=>{download(`minjas-day-backup-${todayKey()}.json`,JSON.stringify({app:"minjas-day",saved:new Date().toISOString(),data:db,recipes,ticks},null,1),"application/json");
+  const s=$("#bk-status");s.textContent="Backup saved to your downloads.";s.className="status ok"};
+$("#restore-file").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{const s=$("#bk-status");try{const b=JSON.parse(rd.result);if(b.app!=="minjas-day"||!b.data)throw 0;
+      if(!confirm("Replace everything on this phone with the backup?"))return;
+      db=Object.assign(blank(),b.data);recipes=b.recipes&&b.recipes.length?b.recipes:recipes;ticks=b.ticks||{};
+      persist();save(K_REC,recipes);save(K_TICK,ticks);renderSettings();s.textContent="Backup restored.";s.className="status ok"}
+    catch(err){s.textContent="That file isn't a Minja's Day backup.";s.className="status err"}};rd.readAsText(f)});
+$("#clean-btn").onclick=()=>{const cut=addDays(todayKey(),-30),n=db.tasks.length;
+  db.tasks=db.tasks.filter(t=>isRep(t)||!t.done||t.date>=cut);persist();const s=$("#bk-status");s.textContent=`Removed ${n-db.tasks.length} finished tasks older than 30 days.`;s.className="status ok"};
+$("#install-btn").onclick=async()=>{if(!installEvt)return;installEvt.prompt();await installEvt.userChoice.catch(()=>{});installEvt=null;renderSettings()};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if($("#v-settings").classList.contains("on"))renderSettings()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet").classList.contains("on"))closeSheet()});
+
+// a new day starts while the app sits open in the background
+let lastDay=todayKey();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;const t=todayKey();
+  if(t!==lastDay){if(sel===lastDay)sel=t;weekStart=mondayOf(t);lastDay=t}render()});
+
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+render();
+</script>
+</body>
+</html>
