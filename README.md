@@ -1,16 +1,24 @@
-# Minja's Day
+# Minja's Kitchen
 
-A calm day planner with a to-do list, meal plan and recipe book. It is one HTML page that installs as an app on a phone (PWA) and works offline.
+A gluten-free and dairy-free recipe book. It is one HTML page that installs as an app on a phone (PWA) and works offline.
 
-**Open it:** https://rubenz21.github.io/m-app/
+**Open it:** https://rubenz21.github.io/M-app/
 
 ## What it does
 
-- **Day** – to-do list for any day, with a week strip to jump between days. Tasks can have a time, an area (Home, Studio, Family, Errands, For me), a note, a priority star, and can repeat (daily, weekdays, weekly, monthly). Typing "Dentist at 14:30" sets the time for you. Unfinished tasks from earlier days can be brought to today in one tap. Also has breakfast / lunch / dinner and a "note to self" per day.
-- **Week** – the whole week at a glance: tasks, progress, meals and notes.
-- **Recipes** – the Minja's Kitchen recipe book (gluten free, dairy free): search, categories, tick off ingredients and steps, plan a recipe for a day, send its ingredients to the shopping list. New recipes come from Claude as CSV (Settings has the prompt).
-- **Shopping** – shopping list with tick-off, "clear ticked" and share.
-- **Settings** – name, recipe import/remove, backup and restore (JSON file).
+- **Recipe book**: search, filter by category, tick off ingredients and steps while cooking, notes, share a recipe as text.
+- **Write or edit recipes** in the app (+ button, or the pencil on a recipe).
+- **Export**: all recipes as one CSV file (download, share or copy).
+- **Import**: the same CSV format comes back in, from a file or pasted text. Recipes with the same title are updated and the rest are kept. You can also replace the whole cookbook.
+- **Claude prompts**: one asks for a single new recipe. The other ("More like mine") goes with the exported CSV so Claude suggests new recipes that aren't in the cookbook yet.
+
+## CSV format
+
+```
+title,category,time,serves,tags,ingredients,steps,notes
+```
+
+One recipe per row, every field in double quotes. `ingredients` and `steps` are lists separated by ` | `, and `tags` are comma separated. Export and import use exactly this format, so an exported file can be imported again unchanged.
 
 ## Install on a phone
 
@@ -18,7 +26,7 @@ Open the link in Chrome, tap ⋮ → **Add to Home screen** / **Install app**. O
 
 ## Data
 
-Everything is stored in the browser on the phone (localStorage). Nothing is sent anywhere. Use **Settings → Save backup** now and then.
+Recipes are stored in the browser on the phone (localStorage). Nothing is sent anywhere. The exported CSV is also the backup.
 
 ## Files
 

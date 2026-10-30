@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached on install. Pages and files are fetched
 // fresh when online (so updates arrive) and served from the cache when offline.
-const CACHE = "minjas-day-v1";
+const CACHE = "minjas-kitchen-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", e => {
